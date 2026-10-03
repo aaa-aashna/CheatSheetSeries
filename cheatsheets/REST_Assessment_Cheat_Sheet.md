@@ -110,8 +110,8 @@ Missing or weak limits let an attacker guess credentials, harvest data or consum
 - Identify what the limit is keyed on: a per-IP limit is worked around by changing address, so per-account or per-API-key limits must still hold, and an authenticated session must not disable them.
 - Record the observed limit, the point at which it triggers and the response returned, so each finding states the missing control precisely.
 
-## Related Resources
+## References
 
-- [REST Security Cheat Sheet](REST_Security_Cheat_Sheet.md) - the other side of this cheat sheet
-- [OWASP API Security Top 10](https://owasp.org/API-Security/) - the API risk categories covered by the sections above
-- [YouTube: RESTful services, web security blind spot](https://www.youtube.com/watch?v=pWq4qGLAZHI) - a video presentation elaborating on most of the topics on this cheat sheet.
+- [OWASP API Security Top 10](https://owasp.org/API-Security/) - API security risks and testing categories referenced throughout this cheat sheet.
+- [OpenAPI Specification](https://spec.openapis.org/oas/v3.1.0) - the API description and security requirement model used in the OpenAPI assessment guidance.
+- [RFC 9110: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110) - HTTP methods and status-code semantics referenced in the assessment guidance.
