@@ -58,8 +58,11 @@ The following techniques are all good for preventing attacks against deserializa
 
 Implementation advice:
 
-- In your code, override the `ObjectInputStream#resolveClass()` method to prevent arbitrary classes from being deserialized. This safe behavior can be wrapped in a library like [SerialKiller](https://github.com/ikkisoft/SerialKiller).
-- Use a safe replacement for the generic `readObject()` method as seen here. Note that this addresses "[billion laughs](https://en.wikipedia.org/wiki/Billion_laughs_attack)" type attacks by checking input length and number of objects deserialized.
+- Prefer Java's built-in [serialization filtering](https://docs.oracle.com/en/java/javase/24/core/java-serialization-filters.html) for `ObjectInputStream` when native Java serialization cannot be avoided. `ObjectInputFilter` can restrict deserialized classes and enforce resource limits such as array length, graph depth, reference count, and stream size.
+- Define filters for the specific classes and resource limits expected by each deserialization context. An allow-list is preferable when the expected types are known.
+- For simple applications, a JVM-wide filter can be configured with the `jdk.serialFilter` system property. For individual streams, use `ObjectInputStream#setObjectInputFilter()` or `ObjectInputFilter.Config.createFilter()`.
+- Do not treat serialization filtering as a reason to deserialize arbitrary untrusted data; avoid native Java serialization where a safer data format can be used.
+- In legacy code where `ObjectInputStream#resolveClass()` is overridden, continue to restrict the classes that may be deserialized, but prefer the standard filtering mechanism for new implementations.
 
 #### Clear-box Review
 
