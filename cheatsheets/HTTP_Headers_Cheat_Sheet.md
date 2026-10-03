@@ -196,6 +196,22 @@ Set it and disable all the features that your site does not need or allow them o
 
 - *NOTE*: This example is disabling geolocation, camera, and microphone for all domains.
 
+### Clear-Site-Data
+
+The `Clear-Site-Data` response header instructs a browser to clear selected data associated with the requesting origin, such as cookies, storage, or cached data.
+
+#### Recommendation
+
+Use `Clear-Site-Data` when an application needs to remove browser-held data after a security-sensitive state change, such as a successful logout. Select only the data types that need to be cleared because the header can affect more than just the current page.
+
+For example, a logout response can clear authentication-related browser data:
+
+> `Clear-Site-Data: "cache", "cookies", "storage", "executionContexts"`
+
+The `"cookies"` directive also affects cookies associated with the registrable domain, including subdomains. Do not treat `Clear-Site-Data` as a replacement for server-side session invalidation; the server must still invalidate the authenticated session or token.
+
+For current directive support and browser behavior, see [MDN: Clear-Site-Data](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Clear-Site-Data).
+
 ### Server
 
 The `Server` header describes the software used by the origin server that handled the request — that is, the server that generated the response.
