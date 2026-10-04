@@ -163,7 +163,7 @@ Apollo recommends:
 
 > **Before you go ahead and spend a ton of time implementing query cost analysis be certain you need it.** Try to crash or slow down your staging API with a nasty query and see how far you get — maybe your API doesn’t have these kinds of nested relationships, or maybe it can handle fetching thousands of records at a time perfectly fine and doesn’t need query cost analysis!
 
-APIs using graphql-java can utilize the built-in [MaxQueryComplexityInstrumentationto](https://github.com/graphql-java/graphql-java/blob/master/src/main/java/graphql/analysis/MaxQueryComplexityInstrumentation.java) to enforce max query complexity. APIs using JavaScript can utilize [graphql-cost-analysis](https://github.com/pa-bru/graphql-cost-analysis) or [graphql-validation-complexity](https://github.com/4Catalyzer/graphql-validation-complexity) to enforce max query cost.
+APIs using graphql-java can utilize the built-in [MaxQueryComplexityInstrumentation](https://github.com/graphql-java/graphql-java/blob/master/src/main/java/graphql/analysis/MaxQueryComplexityInstrumentation.java) to enforce max query complexity. APIs using JavaScript can utilize [graphql-cost-analysis](https://github.com/pa-bru/graphql-cost-analysis) or [graphql-validation-complexity](https://github.com/4Catalyzer/graphql-validation-complexity) to enforce max query cost.
 
 #### Rate Limiting
 
@@ -301,7 +301,7 @@ _**Disable Introspection & GraphiQL - JavaScript**_
 ```javascript
 app.use('/graphql', graphqlHTTP({
   schema: MySessionAwareGraphQLSchema,
-+ validationRules: [NoIntrospection]
+  validationRules: [NoIntrospection],
   graphiql: process.env.NODE_ENV === 'development',
 }));
 ```
