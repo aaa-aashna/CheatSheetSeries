@@ -113,7 +113,7 @@ For further information visit [OWASP ESAPI Java Encoder Project which includes e
 String filter = "(&(uid=" + userInput + ")(objectClass=person))";
 NamingEnumeration<SearchResult> results =
     ctx.search("ou=users,dc=example,dc=com", filter, controls);
-
+```
 
 ✅ Secure Example (using parameterized filter)
 
