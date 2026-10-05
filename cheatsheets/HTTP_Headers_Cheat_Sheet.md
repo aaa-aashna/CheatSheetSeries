@@ -23,15 +23,15 @@ Use Content Security Policy (CSP) frame-ancestors directive if possible.
 Do not allow displaying of the page in a frame.
 > `X-Frame-Options: DENY`
 
-### X-XSS-Protection
+### X-XSS-Protection (Deprecated)
 
-The HTTP `X-XSS-Protection` response header is a feature of Internet Explorer, Chrome, and Safari that stops pages from loading when they detect reflected cross-site scripting (XSS) attacks.
+The HTTP `X-XSS-Protection` response header is a deprecated, non-standard feature. Its filtering behavior is largely unnecessary in modern browsers and can create XSS vulnerabilities in otherwise safe websites. Use a strong Content Security Policy (CSP) instead.
 
 WARNING: Even though this header can protect users of older web browsers that don't yet support CSP, in some cases, this header can create XSS vulnerabilities in otherwise safe websites [source](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection).
 
 #### Recommendation
 
-Use a Content Security Policy (CSP) that disables the use of inline JavaScript.
+Use a Content Security Policy (CSP) that disables the use of inline JavaScript (`'unsafe-inline'`).
 
 Do not set this header or explicitly turn it off.
 > `X-XSS-Protection: 0`
