@@ -377,8 +377,7 @@ Rails provides the `default_headers` functionality that will automatically apply
 ```ruby
 ActionDispatch::Response.default_headers = {
   'X-Frame-Options' => 'SAMEORIGIN',
-  'X-Content-Type-Options' => 'nosniff',
-  'X-XSS-Protection' => '0'
+  'X-Content-Type-Options' => 'nosniff'
 }
 ```
 
