@@ -151,17 +151,13 @@ DO: Use a strong hashing algorithm.
 
 - In .NET (both Framework and Core), the strongest hashing algorithm for general hashing requirements is
   [System.Security.Cryptography.SHA512](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha512).
-- In .NET Framework 4.6 and earlier, the strongest algorithm for password hashing is PBKDF2, implemented as
-  [System.Security.Cryptography.Rfc2898DeriveBytes](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.rfc2898derivebytes).
-- In .NET Framework 4.6.1 and later and .NET Core, the strongest algorithm for password hashing is PBKDF2, implemented as
-  [Microsoft.AspNetCore.Cryptography.KeyDerivation.Pbkdf2](https://docs.microsoft.com/en-us/aspnet/core/security/data-protection/consumer-apis/password-hashing)
-  which has several significant advantages over `Rfc2898DeriveBytes`.
-- When using a hashing function to hash non-unique inputs such as passwords, use a salt value added to the original value before hashing.
+- For new ASP.NET Core applications, use ASP.NET Core Identity and its `PasswordHasher<TUser>` for password storage. [Microsoft advises against calling `KeyDerivation.Pbkdf2` directly for this purpose](https://learn.microsoft.com/en-us/aspnet/core/security/data-protection/consumer-apis/password-hashing?view=aspnetcore-10.0); it is a low-level primitive intended for integration with existing cryptographic systems.
+- Do not use general-purpose hashes such as SHA-512 directly for password storage.
 - Refer to the [Password Storage Cheat Sheet](Password_Storage_Cheat_Sheet.md) for more information.
 
 #### Passwords
 
-DO: Enforce passwords with a minimum complexity that will survive a dictionary attack; i.e. longer passwords that use the full character set (numbers, symbols and letters) to increase entropy.
+DO: Follow the [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md#implement-proper-password-strength-controls) for password length and breached-password screening. Allow long passphrases without mandatory character-composition rules.
 
 #### Encryption
 
@@ -639,15 +635,15 @@ public void RemoveAntiForgeryCookie(Controller controller)
 
 Starting with .NET Core 2.0 it is possible to [automatically generate and verify the antiforgery token](https://docs.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-7.0#aspnet-core-antiforgery-configuration).
 
-If you are using [tag-helpers](https://docs.microsoft.com/en-us/aspnet/core/mvc/views/tag-helpers/intro), which is the default for most web project templates, then all forms will automatically send the anti-forgery token. You can check if tag-helpers are enabled by checking if your main `_ViewImports.cshtml` file contains:
+With [FormTagHelper enabled](https://learn.microsoft.com/en-us/aspnet/core/security/anti-request-forgery?view=aspnetcore-7.0#aspnet-core-antiforgery-configuration), a form with `method="post"` and an absent or empty `action` automatically gets an antiforgery token unless token generation is disabled. This does not apply to every form. You can check whether tag helpers are enabled in your main `_ViewImports.cshtml` file:
 
 ```csharp
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 ```
 
-`IHtmlHelper.BeginForm` also sends anti-forgery-tokens automatically.
+`IHtmlHelper.BeginForm` generates an antiforgery token by default for methods other than GET. Token generation must be paired with server-side validation, as described below.
 
-If you are not using tag-helpers or `IHtmlHelper.BeginForm`, you must use the requisite helper on forms as seen here:
+For forms that need antiforgery protection without automatic token generation, add the token explicitly:
 
 ```html
 <form action="RelevantAction" >
@@ -743,21 +739,21 @@ in your dependencies are detected and acted upon.
 DO: Use [ASP.NET Core Identity](https://docs.microsoft.com/en-us/aspnet/core/security/authentication/identity?view=aspnetcore-2.2&).
 ASP.NET Core Identity framework is well configured by default, where it uses secure password hashes and an individual salt. Identity uses the PBKDF2 hashing function for passwords, and generates a random salt per user.
 
-DO: Set secure password policy
+DO: Configure password length and composition settings according to [NIST’s password guidance](https://pages.nist.gov/800-63-4/sp800-63b/authenticators/#passwordver): at least 15 characters when passwords can be used without multifactor authentication (MFA), or at least eight when only used with MFA, without mandatory character-composition rules.
 
-e.g ASP.NET Core Identity
+This ASP.NET Core Identity example assumes passwords can be used without MFA. Identity’s [default password validator](https://github.com/dotnet/aspnetcore/blob/215a587e52efa710de84138b0a3374b860b924d8/src/Identity/Extensions.Core/src/PasswordValidator.cs) measures length in UTF-16 code units, so add Unicode code-point length validation to enforce NIST’s minimum. These settings also do not implement breached-password screening; follow the [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md#implement-proper-password-strength-controls) for the complete policy.
 
 ``` csharp
 //Startup.cs
 services.Configure<IdentityOptions>(options =>
 {
  // Password settings
- options.Password.RequireDigit = true;
- options.Password.RequiredLength = 8;
- options.Password.RequireNonAlphanumeric = true;
- options.Password.RequireUppercase = true;
- options.Password.RequireLowercase = true;
- options.Password.RequiredUniqueChars = 6;
+ options.Password.RequireDigit = false;
+ options.Password.RequiredLength = 15;
+ options.Password.RequireNonAlphanumeric = false;
+ options.Password.RequireUppercase = false;
+ options.Password.RequireLowercase = false;
+ options.Password.RequiredUniqueChars = 1;
 
  options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
  options.Lockout.MaxFailedAccessAttempts = 3;
@@ -849,7 +845,7 @@ public void Configure(IApplicationBuilder app, IHostingEnvironment env)
 }
 ```
 
-E.g. injecting into the class constructor, which makes writing unit test simpler. This is recommended if instances of the class will be created using dependency injection (e.g. MVC controllers). The below example shows logging of all unsuccessful login attempts.
+E.g. injecting into the class constructor, which makes writing unit test simpler. This is recommended if instances of the class will be created using dependency injection (e.g. MVC controllers). The below example logs unsuccessful login attempts and sets [`lockoutOnFailure: true`](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-configuration?view=aspnetcore-10.0#lockout) so failed password attempts count toward the configured lockout threshold for accounts with lockout enabled.
 
 ``` csharp
 public class AccountsController : Controller
@@ -868,7 +864,7 @@ public class AccountsController : Controller
         {
             if (ModelState.IsValid)
             {
-                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: true);
                 if (result.Succeeded)
                 {
                     //Log all successful log in attempts
@@ -1212,9 +1208,12 @@ HttpContext.Current.Response.Headers.Remove("Server");
 
 ## WCF Guidance
 
-- Keep in mind that the only safe way to pass a request in RESTful services is via `HTTP POST`, with TLS enabled.
-Using `HTTP GET` necessitates putting the data in the URL (e.g. the query string) which is visible to the user and will
-be logged and stored in their browser history.
+- Use HTTPS for RESTful requests regardless of HTTP method, and choose methods according to their semantics. Keep sensitive values out of URLs, which can be exposed in logs and browser history even with HTTPS. [POST can carry sensitive form data in the request body rather than the URL](https://www.rfc-editor.org/rfc/rfc9110.html#section-17.9), but POST alone does not provide confidentiality or authorization.
 - Avoid [BasicHttpBinding](https://docs.microsoft.com/en-us/dotnet/api/system.servicemodel.basichttpbinding?view=netframework-4.7.2). It has no default security configuration. Use [WSHttpBinding](https://docs.microsoft.com/en-us/dotnet/api/system.servicemodel.wshttpbinding?view=netframework-4.7.2) instead.
 - Use at least two security modes for your binding. Message security includes security provisions in the headers. Transport security means use of SSL. [TransportWithMessageCredential](https://docs.microsoft.com/en-us/dotnet/framework/wcf/samples/ws-transport-with-message-credential) combines the two.
 - Test your WCF implementation with a fuzzer like [ZAP](https://www.zaproxy.org/).
+
+## References
+
+- [Microsoft: Secure coding guidelines for .NET](https://learn.microsoft.com/en-us/dotnet/standard/security/secure-coding-guidelines)
+- [Microsoft: Introduction to Identity on ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity?view=aspnetcore-10.0)

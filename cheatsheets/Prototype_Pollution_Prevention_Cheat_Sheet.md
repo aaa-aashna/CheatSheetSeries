@@ -48,6 +48,9 @@ const obj = { __proto__: null };
 
 The `__proto__: null` syntax above sets the prototype during object creation. It is different from assigning to the deprecated `Object.prototype.__proto__` accessor.
 
+Freezing built-in prototypes with [`Object.freeze()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze) prevents adding or removing their properties and makes existing data properties non-writable. Freezing is shallow: objects referenced by those properties remain mutable unless separately frozen. Test compatibility first, because libraries that modify built-in prototypes can break.
+
+[`Object.seal()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/seal) only prevents adding or removing properties and changing their configuration; existing writable property values can still change. Do not rely on sealing to prevent those modifications.
 Null-prototype objects do not inherit properties from `Object.prototype`, including the `__proto__` accessor.
 
 ### Validate object properties before use
@@ -78,6 +81,12 @@ This is defense in depth. It does not prevent every form of prototype pollution 
 
 ## References
 
+Credit to [Gareth Hayes](https://garethheyes.co.uk/) for providing the original protection guidance [in this comment](https://github.com/OWASP/ASVS/issues/1563#issuecomment-1470027723).
+
+## References
+
+- [MDN: JavaScript prototype pollution](https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/Prototype_pollution)
+- [Node.js: Command-line API](https://nodejs.org/download/release/v26.5.1/docs/api/cli.html)
 - [MDN: JavaScript prototype pollution](https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/Prototype_pollution)
 - [MDN: Object.create()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create)
 - [Node.js documentation: --disable-proto](https://nodejs.org/dist/latest/docs/api/all.html#--disable-protomode)

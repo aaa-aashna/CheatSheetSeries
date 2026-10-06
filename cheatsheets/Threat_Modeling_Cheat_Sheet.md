@@ -91,7 +91,7 @@ After possible threats have been identified, people will frequently rank them. I
 
 #### Choosing a Threat Modeling Technique
 
-Start with STRIDE for a technical design, and select another technique when the scope requires a different view. The [Software Engineering Institute comparison of threat modeling methods](https://www.sei.cmu.edu/documents/569/2018_019_001_524597.pdf) explains that methods focus on different concerns and may be combined.
+Start with STRIDE for a technical design, and select another technique when the scope requires a different view. The [Software Engineering Institute comparison of threat modeling methods](https://www.sei.cmu.edu/library/threat-modeling-a-summary-of-available-methods/) explains that methods focus on different concerns and may be combined.
 
 | When the team needs to analyze | Consider | How to use it |
 | ------------------------------ | -------- | ------------- |
@@ -111,7 +111,7 @@ Equipped with an understanding of both the system and applicable threats, it is 
 
 - **Mitigate:** Take action to reduce the likelihood that the threat will materialize.
 - **Eliminate:** Simply remove the feature or component that is causing the threat.
-- **Transfer:** Shift responsibility to another entity such as the customer.
+- **Transfer:** Allocate contractual or financial responsibility to another party. [Risk transfer does not itself reduce the likelihood or harmful consequences of an event](https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=908030#page=52); document who owns the remaining controls and residual risk.
 - **Accept:** Do not mitigate, eliminate, or transfer the risk because none of the above options are acceptable given business requirements or constraints.
 
 Document each threat's response and turn agreed mitigations into actionable security requirements. Record how the team will implement each mitigation and why it accepts any remaining risk. Keep these decisions current as the system changes, as recommended by [NIST SP 800-218, practice PW.1.2](https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-218.pdf#page=20).
@@ -144,3 +144,9 @@ In many cases, the solution lies in inviting members of the security teams to th
 To change the current situation, organizations should invest in regular IT security training for their development teams. These training sessions should be conducted by experts and tailored to the specific needs of the team. Additionally, it is beneficial to implement processes and tools that simplify and automate threat modeling. These tools can help in identifying and assessing threats, making the process more accessible and less time-consuming.
 
 It is also important to promote a culture of security throughout the organization, where threat modeling is seen as an integral part of the Software Development Life Cycle (SDLC), rather than an additional burden. Regular review sessions and cross-team workshops can improve collaboration and communication, leading to a more effective and comprehensive approach to security. Through these actions, organizations can make threat modeling a less burdensome and more efficient process, bringing real benefits to the security of their systems.
+
+## References
+
+- [Threat Modeling Manifesto](https://www.threatmodelingmanifesto.org/)
+- [SEI: Threat Modeling — A Summary of Available Methods](https://www.sei.cmu.edu/library/threat-modeling-a-summary-of-available-methods/)
+- [NIST SP 800-218: Secure Software Development Framework](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf)

@@ -46,16 +46,16 @@ The LLM sees all tool descriptions from all connected servers in its context —
 
 - Inspect all tool descriptions, parameter names, types, and return schemas before approval.
 - Treat the *entire* tool schema as a potential injection surface — not just the `description` field.
-- Pin tool definitions using cryptographic hashes and alert on any changes (prevents rug pulls).
+- Pin reviewed tool definitions using cryptographic hashes and require review when they change. This detects metadata changes, not changes to server code or behavior behind an unchanged definition; [tool annotations are hints, not enforcement](https://blog.modelcontextprotocol.io/posts/2026-03-16-tool-annotations/#what-annotations-cant-do).
 - Use tools like `mcp-scan` to automatically detect poisoned descriptions and cross-server shadowing.
 - Use strict JSON Schema for tool parameters: set `additionalProperties: false` and use `pattern` (or similar) on string fields so only declared parameters and valid formats are accepted.
 
 ### 3. Sandbox and Isolate MCP Servers
 
-- Run local MCP servers in sandboxed environments (containers, chroot, application sandboxes).
+- Run local MCP servers in a sandbox that enforces minimal privileges and access to host resources, following the [MCP local-server guidance](https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices#local-mcp-server-compromise). A bare [`chroot`](https://man7.org/linux/man-pages/man2/chroot.2.html) is not a process sandbox.
 - Restrict file system access to only required directories.
 - Disable network access unless explicitly needed.
-- Use `stdio` transport for local servers to limit access to only the MCP client.
+- Use [`stdio`](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio) for local MCP communication through the launched process's standard streams. This avoids a listening MCP endpoint; it does not restrict the server process's file system, network, or credential access.
 - Separate sensitive servers (payment, auth, PII) from general-purpose ones.
 
 ### 4. Human-in-the-Loop for Sensitive Actions
@@ -130,11 +130,11 @@ If the threat model calls for integrity after TLS termination, choose a reviewed
 
 ### 12. Prompt Injection via Tool Return Values
 
-- Treat every tool response as **untrusted user input** — sanitize before feeding back into the LLM context.
-- Instruct the model explicitly (in system prompt) that tool return values are data, not instructions.
-- Strip or escape HTML-like tags (`<IMPORTANT>`, `<system>`, `<instructions>`) from tool outputs before context injection.
-- Log and alert on tool responses that contain instruction-like patterns (imperative verbs, "ignore", "forget", "send to", etc.).
-- For web-scraping / retrieval tools, use a content extraction layer that returns structured data (title, body text) rather than raw HTML.
+- Treat every tool response as **untrusted data**, including responses from approved servers.
+- Separate and clearly label tool data in the model context, and instruct the model to treat it as data rather than instructions.
+- Use tag stripping and instruction-pattern detection only as additional filtering or alerting measures. They cannot establish that the remaining text is safe; [OWASP describes encoded and multilingual prompt injections that evade filters](https://genai.owasp.org/llmrisk/llm01-prompt-injection/).
+- Enforce authorization and validate subsequent tool calls in trusted application code, independently of the model's interpretation. Apply [least privilege](#1-principle-of-least-privilege) and [human approval for sensitive actions](#4-human-in-the-loop-for-sensitive-actions).
+- For web-scraping and retrieval tools, extract the required structured data instead of passing raw HTML. Text inside structured fields remains untrusted.
 
 ## Do's and Don'ts
 
@@ -166,8 +166,6 @@ If the threat model calls for integrity after TLS termination, choose a reviewed
 
 ## References
 
-- [MCP Specification — Security Best Practices](https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices)
-- [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
-- [mcp-scan — Security Scanner for MCP Servers](https://github.com/invariantlabs-ai/mcp-scan)
-- [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/)
-- [Individual Internet-Draft (work in progress): MCPS message signing](https://datatracker.ietf.org/doc/draft-sharif-mcps-secure-mcp/)
+- [MCP: Security Best Practices](https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices)
+- [MCP: Authorization](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization)
+- [MCP: Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)

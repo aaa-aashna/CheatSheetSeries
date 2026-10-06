@@ -239,17 +239,12 @@ Injection of this type occur when the application uses untrusted user input to b
 
 #### How to prevent
 
-Either apply strict input validation (allowlist approach) or use output sanitizing+escaping if input validation is not possible (combine both every time is possible).
+Use [context-specific output encoding](https://owasp.org/projects/java-encoder?tab=how-to-use) when displaying untrusted text. When the application intentionally accepts HTML markup, use an [HTML sanitization policy](https://github.com/OWASP/java-html-sanitizer#crafting-a-policy) for the permitted elements and attributes. Input validation enforces business rules; it does not replace these XSS controls. See the [XSS Prevention Cheat Sheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md) for HTML, attribute, JavaScript, and CSS context requirements.
 
 #### Example
 
 ``` java
-/*
-INPUT WAY: Receive data from user
-Here it's recommended to use strict input validation using allowlist approach.
-In fact, you ensure that only allowed characters are part of the input received.
-*/
-
+// Illustrative business validation; output still needs the appropriate XSS control.
 String userInput = "You user login is owasp-user01";
 
 /* First we check that the value contains only expected character*/
@@ -258,25 +253,10 @@ if (!Pattern.matches("[a-zA-Z0-9\\s\\-]{1,50}", userInput))
     return false;
 }
 
-/* If the first check pass then ensure that potential dangerous character
-that we have allowed for business requirement are not used in a dangerous way.
-For example here we have allowed the character '-', and, this can
-be used in SQL injection so, we
-ensure that this character is not used is a continuous form.
-Use the API COMMONS LANG v3 to help in String analysis...
-*/
-If (0 != StringUtils.countMatches(userInput.replace(" ", ""), "--"))
-{
-    return false;
-}
+// Plain text for an ordinary HTML body position, such as the content of a div.
+String encodedText = Encode.forHtml(userInput);
 
-/*
-OUTPUT WAY: Send data to user
-Here we escape + sanitize any data sent to user
-Use the OWASP Java HTML Sanitizer API to handle sanitizing
-Use the OWASP Java Encoder API to handle HTML tag encoding (escaping)
-*/
-
+// Allowed markup for an HTML body position; not for attributes, script, or style.
 String outputToUser = "You <p>user login</p> is <strong>owasp-user01</strong>";
 outputToUser += "<script>alert(22);</script><img src='#' onload='javascript:alert(23);'>";
 
@@ -286,8 +266,7 @@ PolicyFactory policy = new HtmlPolicyBuilder().allowElements("p", "strong").toFa
 /* Sanitize the output that will be sent to user*/
 String safeOutput = policy.sanitize(outputToUser);
 
-/* Encode HTML Tag*/
-safeOutput = Encode.forHtml(safeOutput);
+/* Keep the permitted markup: encoding this whole fragment would display tags as text. */
 String finalSafeOutputExpected = "You <p>user login</p> is <strong>owasp-user01</strong>";
 if (!finalSafeOutputExpected.equals(safeOutput))
 {
@@ -314,65 +293,21 @@ Injection of this type occur when the application uses untrusted user input to b
 
 #### How to prevent
 
-As there many NoSQL database system and each one use an API for call, it's important to ensure that user input received and used to build the API call expression does not contain any character that have a special meaning in the target API syntax. This in order to avoid that it will be used to escape the initial call expression in order to create another one based on crafted user input. It's also important to not use string concatenation to build API call expression but use the API to create the expression.
+Validate the expected input type, length, and business format, then use the driver's structured query API. Do not concatenate untrusted values into query strings or accept client-supplied query/operator objects. [MongoDB's driver guidance](https://www.mongodb.com/docs/drivers/client-libraries-best-practices/) distinguishes literal values built through typed APIs from JSON or JavaScript that is parsed as query syntax. A blacklist of punctuation is not needed for the string equality query below. See the [NoSQL Security Cheat Sheet](NoSQL_Security_Cheat_Sheet.md#prevent-nosql-injection) for broader controls.
 
 #### Example - MongoDB
 
-``` java
- /* Here use MongoDB as target NoSQL DB */
+Assume `collection` is an application-configured `MongoCollection<Document>`. This example uses the Java driver's [equality filter builder](https://www.mongodb.com/docs/drivers/java/sync/current/builders/filters/) with a string value; the 50-character limit is an illustrative business rule, not the injection defense.
+
+```java
 String userInput = "Brooklyn";
-
-/* First ensure that the input do no contains any special characters
-for the current NoSQL DB call API,
-here they are: ' " \ ; { } $
-*/
-//Avoid regexp this time in order to made validation code
-//more easy to read and understand...
-ArrayList < String > specialCharsList = new ArrayList < String > () {
-    {
-        add("'");
-        add("\"");
-        add("\\");
-        add(";");
-        add("{");
-        add("}");
-        add("$");
-    }
-};
-
-for (String specChar: specialCharsList) {
-    if (userInput.contains(specChar)) {
-        return false;
-    }
+if (userInput == null || userInput.length() > 50) {
+    throw new IllegalArgumentException("Invalid borough");
 }
 
-//Add also a check on input max size
-if (!userInput.length() <= 50)
-{
-    return false;
-}
-
-/* Then perform query on database using API to build expression */
-//Connect to the local MongoDB instance
-try(MongoClient mongoClient = new MongoClient()){
-    MongoDatabase db = mongoClient.getDatabase("test");
-    //Use API query builder to create call expression
-    //Create expression
-    Bson expression = eq("borough", userInput);
-    //Perform call
-    FindIterable<org.bson.Document> restaurants = db.getCollection("restaurants").find(expression);
-    //Verify result consistency
-    restaurants.forEach(new Block<org.bson.Document>() {
-        @Override
-        public void apply(final org.bson.Document doc) {
-            String restBorough = (String)doc.get("borough");
-            if (!"Brooklyn".equals(restBorough))
-            {
-                return false;
-            }
-        }
-    });
-}
+// Keep the field name fixed and the input as a string value.
+Bson expression = Filters.eq("borough", userInput);
+FindIterable<Document> restaurants = collection.find(expression);
 ```
 
 #### References
@@ -402,8 +337,9 @@ The recommended logging policy for a production environment is sending logs to a
 [JSON Template Layout](https://logging.apache.org/log4j/2.x/manual/json-template-layout.html)
 introduced in
 [Log4j 2.14.0](https://logging.apache.org/log4j/2.x/release-notes.html#release-notes-2-14-0)
-and limit the size of strings to 500 bytes using the
-[`maxStringLength` configuration attribute](https://logging.apache.org/log4j/2.x/manual/json-template-layout.html#plugin-attr-maxStringLength):
+and truncate string values longer than 500 characters using the
+[`maxStringLength` configuration attribute](https://logging.apache.org/log4j/2.x/manual/json-template-layout.html#plugin-attr-maxStringLength).
+The truncation suffix is appended after this limit; this does not cap the encoded byte size or the total JSON document size:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -416,7 +352,7 @@ and limit the size of strings to 500 bytes using the
     <Socket name="SOCKET"
             host="localhost"
             port="12345">
-      <!-- Limit the size of any string field in the produced JSON document to 500 bytes -->
+      <!-- Truncate strings longer than 500 characters, then append the truncation suffix -->
       <JsonTemplateLayout maxStringLength="500"
                           nullEventDelimiterEnabled="true"/>
     </Socket>
@@ -442,7 +378,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 ...
 // Most common way to declare a logger
-private static final LOGGER = LogManager.getLogger();
+private static final Logger logger = LogManager.getLogger();
 // GOOD!
 //
 // Use parameterized logging to add user data to a message
@@ -491,7 +427,7 @@ In the example below, Logback is configured to roll on 10 log files of 5 MiB eac
   </appender>
 
   <root level="DEBUG">
-    <appender-ref ref="SOCKET"/>
+    <appender-ref ref="RollingFile"/>
   </root>
 </configuration>
 ```
@@ -856,7 +792,7 @@ class HybridSimple {
 
 If you absolutely cannot use a separate library, it is still possible to use the built JCA/JCE classes but it is strongly recommended to have a cryptography expert review the full design and code, as even the most trivial error can severely weaken your encryption.
 
-The following code snippet shows an example of using Elliptic Curve/Diffie Helman (ECDH) together with AES-GCM to perform encryption/decryption of data between two different sides without the need the transfer the symmetric key between the two sides. Instead, the sides exchange public keys and can then use ECDH to generate a shared secret which can be used for the symmetric encryption.
+This Java 25+ example illustrates Elliptic Curve Diffie-Hellman (ECDH) followed by HKDF-SHA-256 and AES-GCM. Do not use raw ECDH output directly as an AES key: [RFC 5869](https://www.rfc-editor.org/rfc/rfc5869.html#section-3.3) explains why Diffie-Hellman values need extraction. The [Java KDF API](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/javax/crypto/KDF.html) performs both extraction and expansion here. This is a primitive demonstration, not an authenticated communication protocol.
 
 Note that this code sample relies on the AesGcmSimple class from the [previous section](#symmetric-example-using-built-in-jcajce-classes).
 
@@ -866,7 +802,7 @@ A few constraints/pitfalls with this code:
 - The code deliberately enforces a new nonce for every encryption operation but this must be managed as a separate data item alongside the ciphertext.
 - The private keys will need to be stored securely.
 - The code does not consider the validation of public keys before use.
-- Overall, there is no verification of authenticity between the two sides.
+- Public keys must be authenticated independently before use. HKDF does not authenticate the peer; this example omits that protocol and its identity/context binding.
 
 <details>
   <summary>Click here to view the "JCA/JCE hybrid encryption" code snippet.</summary>
@@ -975,9 +911,12 @@ class ECDHSimple {
 
         AesKeyNonce aesKeyNonce = new AesKeyNonce();
 
-        // Copy first 32 bytes as the key
-        byte[] key = Arrays.copyOfRange(secret, 0, (AesGcmSimple.KEY_SIZE / 8));
-        aesKeyNonce.Key = new SecretKeySpec(key, 0, key.length, "AES");
+        // Illustrative domain label; a real protocol defines its full context binding.
+        byte[] info = "OWASP Java ECDH example: AES-256-GCM v1".getBytes(StandardCharsets.UTF_8);
+        var derivation = HKDFParameterSpec.ofExtract().addIKM(secret)
+                .thenExpand(info, AesGcmSimple.KEY_SIZE / 8);
+        aesKeyNonce.Key = KDF.getInstance("HKDF-SHA256").deriveKey("AES", derivation);
+        Arrays.fill(secret, (byte) 0);
 
         // Passed in nonce will be used.
         aesKeyNonce.Nonce = nonce;
@@ -1000,3 +939,8 @@ class ECDHSimple {
 ```
 
 </details>
+
+## References
+
+- [Oracle: Secure Coding Guidelines for Java SE](https://www.oracle.com/java/technologies/javase/seccodeguide.html)
+- [Tink: Authenticated Encryption with Associated Data](https://developers.google.com/tink/aead)

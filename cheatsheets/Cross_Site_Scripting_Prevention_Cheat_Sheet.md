@@ -14,7 +14,7 @@ Fortunately, applications built with modern web frameworks have fewer XSS bugs, 
 
 - _escape hatches_ that frameworks use to directly manipulate the DOM
 - React’s `dangerouslySetInnerHTML` without sanitizing the HTML
-- React cannot handle `javascript:` or `data:` URLs without specialized validation
+- Unvalidated URL values: [React 19 blocks `javascript:` URLs in `src` and `href`](https://react.dev/blog/2024/04/25/react-19-upgrade-guide#other-breaking-changes), but this does not replace application-specific [URL validation](#xss-prevention-rules-summary)
 - Angular’s `bypassSecurityTrustAs*` functions
 - Lit's `unsafeHTML` function
 - Polymer's `inner-h-t-m-l` attribute and `htmlLiteral` function
@@ -58,7 +58,7 @@ In order to add a variable to a HTML context safely to a web template, use HTML 
 
 Here are some examples of encoded values for specific characters:
 
-If you're using JavaScript for writing to HTML, look at the `.textContent` attribute. It is a **Safe Sink** and will automatically HTML Entity Encode.
+When displaying text with JavaScript, assign it to the [`textContent` property](https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent) of an ordinary element such as a `<div>`. This creates a text node without parsing HTML; it does not HTML-encode the value. Pass the original text without pre-encoding it. Do not use it for untrusted script or style content; [`HTMLScriptElement.textContent`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement/textContent) sets executable code.
 
 ```HTML
 &    &amp;
@@ -108,11 +108,7 @@ For JSON, verify that the `Content-Type` header is `application/json` and not `t
 <span style="property : $varUnsafe">Oh no</span>
 ```
 
-If you're using JavaScript to change a CSS property, look into using
-`style.property = x`.
-This is a **Safe Sink** and will automatically CSS encode data in it.
-
-When inserting variables into CSS properties, ensure the data is properly encoded and sanitized to prevent injection attacks. Avoid placing variables directly into selectors or other CSS contexts.
+When changing styles with JavaScript, use a fixed property such as `element.style.color` with a value from an application-defined allowlist. [CSS property assignment](https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleDeclaration/setProperty) sets a CSS value; it does not automatically CSS-encode it. Do not let untrusted input choose the property or supply an entire declaration block. Properties that accept URLs require URL validation as well.
 
 ### Output Encoding for “URL Contexts”
 
@@ -133,7 +129,9 @@ url = "https://site.com?data=" + urlencode(parameter)
 <a href='attributeEncode(url)'>link</a>
 ```
 
-If you're using JavaScript to construct a URL Query Value, look into using `window.encodeURIComponent(x)`. This is a **Safe Sink** and will automatically URL encode data in it.
+When using JavaScript to construct a URL, use [`encodeURIComponent()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) to encode each untrusted query parameter value. It encodes a URL component; it does not validate a complete URL.
+
+[Base64url](https://www.rfc-editor.org/rfc/rfc4648.html#section-5) represents bytes using a URL-safe alphabet. Protocols such as [JSON Web Tokens (JWTs)](JSON_Web_Token_Cheat_Sheet.md) use an [unpadded form](https://www.rfc-editor.org/rfc/rfc7515.html#section-2) that `encodeURIComponent()` leaves unchanged. Use base64url only when the receiver expects it. After decoding, apply the output encoding or sanitization required by the destination context.
 
 ### Dangerous Contexts
 
@@ -180,7 +178,7 @@ Thankfully, many sinks where variables can be placed are safe. This is because t
 
 ```js
 elem.textContent = dangerVariable;
-elem.insertAdjacentText(dangerVariable);
+elem.insertAdjacentText("beforeend", dangerVariable);
 elem.className = dangerVariable;
 elem.setAttribute(safeName, dangerVariable);
 formfield.value = dangerVariable;
@@ -188,6 +186,8 @@ document.createTextNode(dangerVariable);
 document.createElement(dangerVariable);
 elem.innerHTML = DOMPurify.sanitize(dangerVar);
 ```
+
+[`insertAdjacentText()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentText) requires a position and a text value. In the example, `"beforeend"` appends a text node inside the element. Use text sinks on ordinary elements, not script or style elements.
 
 **Safe HTML Attributes include:** `align`, `alink`, `alt`, `bgcolor`, `border`, `cellpadding`, `cellspacing`, `class`, `color`, `cols`, `colspan`, `coords`, `dir`, `face`, `height`, `hspace`, `ismap`, `lang`, `marginheight`, `marginwidth`, `multiple`, `nohref`, `noresize`, `noshade`, `nowrap`, `ref`, `rel`, `rev`, `rows`, `rowspan`, `scrolling`, `shape`, `span`, `summary`, `tabindex`, `title`, `usemap`, `valign`, `value`, `vlink`, `vspace`, `width`.
 
@@ -324,25 +324,9 @@ One final note: If deploying interceptors / filters as an XSS defense was a usef
 
 ## Related Articles
 
-**XSS Attack Cheat Sheet:**
+See the [XSS Filter Evasion Cheat Sheet](XSS_Filter_Evasion_Cheat_Sheet.md) for examples that illustrate why filtering alone is insufficient.
 
-The following article describes how attackers can exploit different kinds of XSS vulnerabilities (and this article was created to help you avoid them):
+## References
 
-- OWASP: [XSS Filter Evasion Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/XSS_Filter_Evasion_Cheat_Sheet.html).
-
-**Description of XSS Vulnerabilities:**
-
-- OWASP article on [XSS](https://owasp.org/www-community/attacks/xss/) Vulnerabilities.
-
-**Discussion about the Types of XSS Vulnerabilities:**
-
-- [Types of Cross-Site Scripting](https://owasp.org/www-community/Types_of_Cross-Site_Scripting).
-
-**How to Review Code for Cross-Site Scripting Vulnerabilities:**
-
-- [OWASP Code Review Guide](https://owasp.org/www-project-code-review-guide/) article on [Reviewing Code for Cross-site scripting](https://wiki.owasp.org/index.php/Reviewing_Code_for_Cross-site_scripting) Vulnerabilities.
-
-**How to Test for Cross-Site Scripting Vulnerabilities:**
-
-- [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/) article on testing for Cross-Site Scripting vulnerabilities.
-- [XSS Experimental Minimal Encoding Rules](https://wiki.owasp.org/index.php/XSS_Experimental_Minimal_Encoding_Rules) Provides examples and guidelines for experimental minimal encoding strategies to prevent Cross-Site Scripting (XSS) attacks.
+- [OWASP Java Encoder: Output Contexts and Boundaries](https://github.com/OWASP/owasp-java-encoder/blob/main/docs/contexts.md#encode-for-the-parser-that-receives-the-value)
+- [DOMPurify Documentation](https://github.com/cure53/DOMPurify)

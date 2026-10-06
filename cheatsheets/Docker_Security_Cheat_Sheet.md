@@ -21,7 +21,7 @@ Docker socket _/var/run/docker.sock_ is the UNIX socket that Docker is listening
 **Do not enable _tcp_ Docker daemon socket.** If you are running docker daemon with `-H tcp://0.0.0.0:XXX` or similar you are exposing unencrypted and unauthenticated direct access to the Docker daemon, if the host is internet connected this means the docker daemon on your computer can be used by anyone from the public internet.
 If you really, **really** have to do this, you should secure it. Check how to do this following [Docker official documentation](https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-socket-option).
 
-**Do not expose _/var/run/docker.sock_ to other containers**. If you are running your docker image with `-v /var/run/docker.sock://var/run/docker.sock` or similar, you should change it. Remember that mounting the socket read-only is not a solution but only makes it harder to exploit. Equivalent in the docker compose file is something like this:
+**Do not expose _/var/run/docker.sock_ to other containers**. If you are running your docker image with `-v /var/run/docker.sock://var/run/docker.sock` or similar, you should change it. Mounting the socket read-only does not make the Docker API read-only: a process that can connect to the socket can still send requests that modify containers or the host. Docker grants access to all daemon commands by default; filesystem mount flags do not replace [API authorization](https://docs.docker.com/engine/extend/plugins_authorization/). Equivalent in the docker compose file is something like this:
 
 ```yaml
 volumes:
@@ -319,7 +319,7 @@ Setting an appropriate log level, configures the Docker daemon to log events tha
 
 ### Rule \#11 - Run Docker in rootless mode
 
-Rootless mode ensures that the Docker daemon and containers are running as an unprivileged user, which means that even if an attacker breaks out of the container, they will not have root privileges on the host, which in turn substantially limits the attack surface. This is different to [userns-remap](#rule-2---set-a-user) mode, where the daemon still operates with root privileges.
+[Rootless mode](https://docs.docker.com/engine/security/rootless/#how-it-works) runs the Docker daemon and containers without host-root privileges, reducing the impact of daemon or runtime compromise. It does not guarantee protection against host privilege escalation through [kernel vulnerabilities](https://docs.docker.com/desktop/troubleshoot-and-support/faqs/linuxfaqs/#why-does-docker-desktop-for-linux-run-a-vm); the shared kernel remains part of the security boundary. Unlike rootless mode, `userns-remap` leaves the daemon running with root privileges.
 
 Evaluate the [specific requirements](Attack_Surface_Analysis_Cheat_Sheet.md) and [security posture](Threat_Modeling_Cheat_Sheet.md) of your environment to determine if rootless mode is the best choice for you. For environments where security is a paramount concern and the [limitations of rootless mode](https://docs.docker.com/engine/security/rootless/#known-limitations) do not interfere with operational requirements, it is a strongly recommended configuration. Alternatively consider using [Podman](#podman-as-an-alternative-to-docker) as an alternative to Docker.
 
@@ -337,7 +337,7 @@ docker secret create my_secret /path/to/super-secret-data.txt
 docker service create --name web --secret my_secret nginx:latest
 ```
 
-Or for Docker Compose:
+For local Docker Compose, [file-backed secrets are bind mounts](https://docs.docker.com/compose/how-tos/use-secrets/#use-secrets). Protect the source files on the host with appropriate access permissions and storage encryption; declaring a Compose secret does not encrypt these files. This differs from [Swarm-managed secrets](https://docs.docker.com/engine/swarm/secrets/#how-docker-manages-secrets), which are distributed over mutual TLS and stored in an encrypted Raft log:
 
 ```yaml
 version: "3.8"
@@ -351,7 +351,7 @@ services:
       - my_secret
 ```
 
-While Docker Secrets generally provide a secure way to manage sensitive data in Docker environments, this approach is not recommended for Kubernetes, where secrets are stored in plaintext by default. In Kubernetes, consider using additional security measures such as etcd encryption, or third-party tools. Refer to the [Secrets Management Cheat Sheet](Secrets_Management_Cheat_Sheet.md) for more information.
+While Docker Secrets generally provide a secure way to manage sensitive data in Docker environments, this approach is not recommended for Kubernetes, where secrets are stored in plaintext by default. In Kubernetes, consider using additional security measures such as etcd encryption, or third-party tools. Refer to the [Secrets Management Cheat Sheet](Secrets_Management_Cheat_Sheet.md) and [Kubernetes Security Cheat Sheet](Kubernetes_Security_Cheat_Sheet.md) for more information.
 
 ### RULE \#13 - Enhance Supply Chain Security
 
@@ -371,13 +371,7 @@ Building on the principles in [Rule \#9](#rule-9---integrate-container-scanning-
 2. Rootless Containers: The fork-exec model facilitates Podman's ability to run containers without requiring root privileges. When a non-root user initiates a container start, Podman forks and execs under the user's permissions.
 3. SELinux Integration: Podman is built to work with SELinux, which provides an additional layer of security by enforcing mandatory access controls on containers and their interactions with the host system.
 
-## References and Further Reading
+## References
 
-[OWASP Docker Top 10](https://github.com/OWASP/Docker-Security)
-[Docker Security Best Practices](https://docs.docker.com/develop/security-best-practices/)
-[Docker Engine Security](https://docs.docker.com/engine/security/)
-[Kubernetes Security Cheat Sheet](Kubernetes_Security_Cheat_Sheet.md)
-[SLSA - Supply Chain Levels for Software Artifacts](https://slsa.dev/)
-[Sigstore](https://sigstore.dev/)
-[Docker Build Attestation](https://docs.docker.com/build/attestations/)
-[Docker Content Trust](https://docs.docker.com/engine/security/trust/)
+- [Docker Engine Security](https://docs.docker.com/engine/security/)
+- [Docker Build Attestations](https://docs.docker.com/build/metadata/attestations/)

@@ -108,8 +108,8 @@ Re-authentication is critical when an account has experienced high-risk activity
   Use risk-based authentication models that adapt to the user's behavior and context
 - **Multi-Factor Authentication (MFA)**
   Require an additional layer of verification for sensitive actions or events
-- **Challenge-Based Verification**
-  Prompt users to confirm their identity with a challenge question or secondary method
+- **Bound Authenticators**
+  Require an authenticator already bound to the account, such as the current password or a passkey. Do not substitute security questions, which are excluded by [ASVS 6.4.2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v64-authentication-factor-lifecycle-and-recovery).
 
 #### Implementation Recommendations
 
@@ -119,12 +119,6 @@ Re-authentication is critical when an account has experienced high-risk activity
   Make re-authentication decisions based on context (e.g., geolocation, device type, prior patterns)
 - **Secure Session Management**
   Invalidate sessions after re-authentication and rotate tokens—see the [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
-
-#### References
-
-- [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
-- OWASP ASVS – 2.2.2: Re-authentication requirements
-- NIST 800-63B: Digital Identity Guidelines – Authentication Assurance Levels
 
 ### Consider Strong Transaction Authentication
 
@@ -292,7 +286,7 @@ It may be more user-friendly to only require a CAPTCHA be solved after a small n
 
 #### Security Questions and Memorable Words
 
-The addition of a security question or memorable word can also help protect against automated attacks, especially when the user is asked to enter a number of randomly chosen characters from the word. It should be noted that this does **not** constitute multi-factor authentication, as both factors are the same (something you know). Furthermore, security questions are often weak and have predictable answers, so they must be carefully chosen. The [Choosing and Using Security Questions cheat sheet](Choosing_and_Using_Security_Questions_Cheat_Sheet.md) contains further guidance on this.
+Do not use security questions for authentication or re-authentication; [ASVS 6.4.2](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v64-authentication-factor-lifecycle-and-recovery) excludes knowledge-based authentication. When verifying a password or memorable word, request and verify the full secret rather than selected characters, as required by [NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html#passwordver). See the [Choosing and Using Security Questions Cheat Sheet](Choosing_and_Using_Security_Questions_Cheat_Sheet.md) for guidance limited to legacy systems.
 
 ## Logging and Monitoring
 
@@ -353,7 +347,7 @@ UAF takes advantage of existing security technologies present on devices for aut
 
 U2F augments password-based authentication using a hardware token (typically USB) that stores cryptographic authentication keys and uses them for signing. The user can use the same token as a second factor for multiple applications. U2F works with web applications. It provides **protection against phishing** by using the URL of the website to look up the stored authentication key.
 
-**FIDO2**: FIDO2 and WebAuthn, encompassing previous standards (UAF/U2F), form the foundation of modern **Passkeys** technology. Passkeys enable users to securely log in using local user verification (such as biometrics or device PINs), often with credential synchronization across devices.
+**FIDO2**: [FIDO2 combines WebAuthn with the Client-to-Authenticator Protocols (CTAP)](https://fidoalliance.org/specifications/). U2F is now named CTAP1; UAF is a separate protocol. WebAuthn credentials form the foundation of modern **Passkeys** technology. Passkeys enable users to securely log in using local user verification (such as biometrics or device PINs), often with credential synchronization across devices.
 
 #### Hardware-backed Key Storage
 
@@ -427,7 +421,7 @@ A feature of more advanced applications is the ability to require different auth
 
 For example, an application may require MFA for the first login from a particular device but not for subsequent logins from that device. Alternatively, a single sign-on solution may authenticate the user and allow them to remain logged in for a day but require a reauthentication if they try to access their profile page.
 
-Another option is the opposite approach where an application allows low risk access with just something that identifies the device (e.g., a specific mobile device fingerprint, a persistent cookie and browser fingerprint, etc. from the previous IP address) and then gradually requires stronger authentication for more sensitive operations. An example might be to allow someone to trigger something to see their current bank balance, but not the account number or anything else. If they need to see transactions, then the application puts them through some base level authentication and if they want to do any money movement, then MFA is required.
+Use device fingerprints, IP addresses, and remembered-device cookies as risk signals, not as substitutes for authentication. [NIST session guidance](https://pages.nist.gov/800-63-4/sp800-63b/session/) distinguishes an authenticated session secret from device and browser characteristics used for monitoring. Require authentication or a valid authenticated session before exposing private account data. For example, a banking application may allow balance viewing within an authenticated session and require stronger or fresher authentication for transaction details or money movement.
 
 Questions that should be considered when implementing a mechanism like this include:
 
@@ -444,3 +438,9 @@ Questions that should be considered when implementing a mechanism like this incl
 - How do we mutate, extend, or revoke tokens/cookies when a mid‑session risk check escalates?
 - How do we synchronize state across multiple concurrent devices or browser tabs?
 - What monitoring and alerting will be in place for potentially suspicious activity, including how the user is notified.
+
+## References
+
+- [NIST SP 800-63B-4: Password Verifiers](https://pages.nist.gov/800-63-4/sp800-63b.html#passwordver)
+- [OWASP Application Security Verification Standard (ASVS): V6 Authentication](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x15-V6-Authentication.md#v6-authentication)
+- [OpenID Connect Core 1.0: ID Token Validation](https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation)

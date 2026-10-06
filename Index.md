@@ -1,6 +1,6 @@
 # Index Alphabetical
 
-**136** cheat sheets available.
+**137** cheat sheets available.
 
 *Icons beside the cheat sheet name indicate in which language(s) code snippet(s) are provided.*
 
@@ -42,7 +42,7 @@
 
 [Bean Validation Cheat Sheet](cheatsheets/Bean_Validation_Cheat_Sheet.md) ![Java](assets/Index_Java.svg) ![Xml](assets/Index_Xml.svg)
 
-[Bot Management and Anti-Automation Cheat Sheet](cheatsheets/Bot_Management_and_Anti-Automation_Cheat_Sheet.md) ![Javascript](assets/Index_Javascript.svg) ![Html](assets/Index_Html.svg) ![Python](assets/Index_Python.svg)
+[Bot Management and Anti-Automation Cheat Sheet](cheatsheets/Bot_Management_and_Anti-Automation_Cheat_Sheet.md) ![Html](assets/Index_Html.svg) ![Python](assets/Index_Python.svg)
 
 [Browser Extension Vulnerabilities Cheat Sheet](cheatsheets/Browser_Extension_Vulnerabilities_Cheat_Sheet.md) ![Javascript](assets/Index_Javascript.svg) ![Json](assets/Index_Json.svg)
 
@@ -82,7 +82,7 @@
 
 [Dependency Graph SBOM Cheat Sheet](cheatsheets/Dependency_Graph_SBOM_Cheat_Sheet.md)
 
-[Deserialization Cheat Sheet](cheatsheets/Deserialization_Cheat_Sheet.md) ![Java](assets/Index_Java.svg) ![Csharp](assets/Index_Csharp.svg) ![Python](assets/Index_Python.svg)
+[Deserialization Cheat Sheet](cheatsheets/Deserialization_Cheat_Sheet.md) ![Java](assets/Index_Java.svg) ![Csharp](assets/Index_Csharp.svg)
 
 [Django REST Framework Cheat Sheet](cheatsheets/Django_REST_Framework_Cheat_Sheet.md) ![Python](assets/Index_Python.svg)
 
@@ -240,7 +240,7 @@
 
 [SQL Injection Prevention Cheat Sheet](cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.md) ![Java](assets/Index_Java.svg) ![Csharp](assets/Index_Csharp.svg) ![Vbnet](assets/Index_Vbnet.svg)
 
-[Secrets Management Cheat Sheet](cheatsheets/Secrets_Management_Cheat_Sheet.md) ![Python](assets/Index_Python.svg)
+[Secrets Management Cheat Sheet](cheatsheets/Secrets_Management_Cheat_Sheet.md)
 
 [Secure AI Model Ops Cheat Sheet](cheatsheets/Secure_AI_Model_Ops_Cheat_Sheet.md)
 
@@ -256,7 +256,9 @@
 
 [Server Side Request Forgery Prevention Cheat Sheet](cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md) ![Java](assets/Index_Java.svg) ![Python](assets/Index_Python.svg) ![Ruby](assets/Index_Ruby.svg) ![Bash](assets/Index_Bash.svg)
 
-[Serverless FaaS Security Cheat Sheet](cheatsheets/Serverless_FaaS_Security_Cheat_Sheet.md) ![Python](assets/Index_Python.svg) ![Json](assets/Index_Json.svg) ![Bash](assets/Index_Bash.svg)
+[Server Side Template Injection Prevention Cheat Sheet](cheatsheets/Server_Side_Template_Injection_Prevention_Cheat_Sheet.md)
+
+[Serverless FaaS Security Cheat Sheet](cheatsheets/Serverless_FaaS_Security_Cheat_Sheet.md) ![Python](assets/Index_Python.svg) ![Json](assets/Index_Json.svg)
 
 [Session Management Cheat Sheet](cheatsheets/Session_Management_Cheat_Sheet.md)
 

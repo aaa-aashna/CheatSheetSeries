@@ -69,6 +69,8 @@ Check that your WAF supports WebSocket traffic inspection beyond the initial han
 
 ### Authentication and Authorization
 
+For general identity and session controls, see the [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md) and [Session Management Cheat Sheet](Session_Management_Cheat_Sheet.md).
+
 WebSockets don't have built-in authentication. Browsers include cookies in WebSocket handshake requests, making WebSocket applications vulnerable to Cross-Site WebSocket Hijacking (CSWSH).
 
 CSWSH allows attackers to hijack authenticated WebSocket connections from malicious websites:
@@ -113,7 +115,9 @@ function validateSession(ws, sessionId) {
 
 **Token-based authentication:**
 
-For enhanced security, use token-based authentication instead of relying solely on cookies. Tokens can be passed in query strings (note: tokens will appear in access logs and should be redacted) or as part of WebSocket messages after connection establishment. Message-based token passing avoids log exposure but requires protocol design considerations.
+For browser clients using tokens, prefer sending the token in the first message over WSS. Avoid tokens in URL query strings because they can leak into access logs; see the [`websockets` authentication guidance](https://websockets.readthedocs.io/en/stable/topics/authentication.html#sending-credentials).
+
+Until token validation succeeds, accept only the authentication message and do not send protected data. Close the connection on authentication failure or timeout, and [limit unauthenticated connections](#denial-of-service-protection). Message-based authentication keeps tokens out of the handshake URL, but tokens must also be excluded from message logs.
 
 **Token refresh:**
 
@@ -191,7 +195,7 @@ const message = JSON.parse(data);
 // const message = eval('(' + data + ')');
 ```
 
-See the [Input Validation Cheat Sheet](Input_Validation_Cheat_Sheet.md) for more details.
+See the [Input Validation Cheat Sheet](Input_Validation_Cheat_Sheet.md), [Cross Site Scripting Prevention Cheat Sheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md), and [SQL Injection Prevention Cheat Sheet](SQL_Injection_Prevention_Cheat_Sheet.md) for more details.
 
 ### Service Tunneling Risks
 
@@ -256,8 +260,5 @@ Regularly update WebSocket libraries and monitor security advisories. Past versi
 
 ## References
 
-- [Cross Site Scripting Prevention Cheat Sheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md)
-- [SQL Injection Prevention Cheat Sheet](SQL_Injection_Prevention_Cheat_Sheet.md)
-- [Authentication Cheat Sheet](Authentication_Cheat_Sheet.md)
-- [Session Management Cheat Sheet](Session_Management_Cheat_Sheet.md)
+- [RFC 6455: The WebSocket Protocol](https://datatracker.ietf.org/doc/html/rfc6455)
 - [CWE-1385: Missing Origin Validation in WebSockets](https://cwe.mitre.org/data/definitions/1385.html)

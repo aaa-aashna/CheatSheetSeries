@@ -226,7 +226,7 @@ JavaScript is a dynamic language and depending on how the framework parses a URL
 
 #### Perform output escaping
 
-In addition to input validation, you should escape all HTML and JavaScript content shown to users via application in order to prevent cross-site scripting (XSS) attacks. For context-aware escaping, use [escape-html](https://github.com/component/escape-html). When you need to render user-supplied HTML (rather than escape it), use a maintained sanitizer such as [DOMPurify](https://github.com/cure53/DOMPurify) (with `jsdom` for server-side use) or [`sanitize-html`](https://www.npmjs.com/package/sanitize-html). Avoid `node-esapi`, which is no longer actively maintained.
+Use output encoding that matches the destination context to prevent cross-site scripting (XSS). [escape-html](https://github.com/component/escape-html#escapehtmlstring) supports ordinary HTML text and quoted ordinary-text attribute values; it does not safely encode JavaScript, CSS, or URL contexts. Follow the [XSS Prevention Cheat Sheet](Cross_Site_Scripting_Prevention_Cheat_Sheet.md#output-encoding) for context-specific controls. When you need to render user-supplied HTML (rather than escape it), use a maintained sanitizer such as [DOMPurify](https://github.com/cure53/DOMPurify) (with `jsdom` for server-side use) or [`sanitize-html`](https://www.npmjs.com/package/sanitize-html). Avoid `node-esapi`, which is no longer actively maintained.
 
 #### Perform application activity logging
 
@@ -598,7 +598,7 @@ There are several other tools you can use to check your dependencies. A more com
 
 There are some JavaScript functions that are dangerous and should only be used where necessary or unavoidable. The first example is the `eval()` function. This function takes a string argument and executes it as any other JavaScript source code. Combined with user input, this behavior inherently leads to remote code execution vulnerability. Similarly, calls to `child_process.exec` are also very dangerous. This function acts as a bash interpreter and sends its arguments to /bin/sh. By injecting input to this function, attackers can execute arbitrary commands on the server.
 
-In addition to these functions, some modules require special care when being used. As an example, `fs` module handles filesystem operations. However, if improperly sanitized user input is fed into this module, your application may become vulnerable to file inclusion and directory traversal vulnerabilities. Similarly, `vm` module provides APIs for compiling and running code within V8 Virtual Machine contexts. Since it can perform dangerous actions by nature, it should be used within a sandbox.
+In addition to these functions, some modules require special care when being used. As an example, `fs` module handles filesystem operations. However, if improperly sanitized user input is fed into this module, your application may become vulnerable to file inclusion and directory traversal vulnerabilities. The [`node:vm` module](https://nodejs.org/api/vm.html) compiles and runs code in V8 contexts, but it is not a security mechanism. Do not use it to execute untrusted code.
 
 It would not be fair to say that these functions and modules should not be used whatsoever, however, they should be used carefully especially when they use with user input. Also, there are [some other functions](https://github.com/wisec/domxsswiki/wiki/Direct-Execution-Sinks) that may render your application vulnerable.
 
@@ -640,6 +640,8 @@ function func() {
 
 This list mainly focuses on issues that are common in Node.js applications, with recommendations and examples. In addition to these, there are general [security by design principles](https://wiki.owasp.org/index.php/Security_by_Design_Principles) that apply to web applications regardless of technologies used in application server. You should also keep those principles in mind while developing your applications. You can always refer to [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/) to learn more about web application vulnerabilities and mitigation techniques used against them.
 
-## Additional resources about Node.js security
+## References
 
-[Awesome Node.js Security resources](https://github.com/lirantal/awesome-nodejs-security)
+- [Node.js Security Best Practices](https://nodejs.org/learn/getting-started/security-best-practices)
+- [Node.js Permissions](https://nodejs.org/api/permissions.html)
+- [Express: Production Security Best Practices](https://expressjs.com/en/advanced/best-practice-security/)

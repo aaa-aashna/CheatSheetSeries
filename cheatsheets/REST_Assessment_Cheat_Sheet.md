@@ -112,6 +112,12 @@ Missing or weak limits let an attacker guess credentials, harvest data or consum
 
 ## References
 
+See the [REST Security Cheat Sheet](REST_Security_Cheat_Sheet.md) for implementation guidance corresponding to these assessment topics.
+
+## References
+
+- [RFC 8725: JSON Web Token Best Current Practices](https://datatracker.ietf.org/doc/html/rfc8725)
+- [RFC 6750: OAuth 2.0 Bearer Token Usage](https://www.rfc-editor.org/rfc/rfc6750#section-3.1)
 - [OWASP API Security Top 10](https://owasp.org/API-Security/) - API security risks and testing categories referenced throughout this cheat sheet.
 - [OpenAPI Specification](https://spec.openapis.org/oas/v3.1.0) - the API description and security requirement model used in the OpenAPI assessment guidance.
 - [RFC 9110: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110) - HTTP methods and status-code semantics referenced in the assessment guidance.

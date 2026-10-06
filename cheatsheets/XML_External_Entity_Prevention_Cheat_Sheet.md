@@ -59,11 +59,11 @@ SAXParser* parser = new SAXParser;
 parser->setDisableDefaultEntityResolution(true);
 ```
 
-Use of SAX2XMLReader, do this to prevent XXE:
+For `SAX2XMLReader`, configure the reader that will parse the document. The [Xerces-C++ feature documentation](https://xerces.apache.org/xerces-c/program-sax2-3.html) describes `fgXercesDisableDefaultEntityResolution`: it prevents fallback resolution when `resolveEntity` returns `NULL`. A custom resolver must also reject unapproved resources.
 
 ``` cpp
 SAX2XMLReader* reader = XMLReaderFactory::createXMLReader();
-parser->setFeature(XMLUni::fgXercesDisableDefaultEntityResolution, true);
+reader->setFeature(XMLUni::fgXercesDisableDefaultEntityResolution, true);
 ```
 
 ## ColdFusion
@@ -442,31 +442,27 @@ Per the 'NSXMLDocument External Entity Restriction API' section of this [page](h
 
 ## PHP
 
-**When using the default XML parser (based on libxml2), PHP 8.0 and newer [prevent XXE by default](https://www.php.net/manual/en/function.libxml-disable-entity-loader.php).**
+With libxml 2.9.0 or later, entity substitution is disabled by default. Do not enable `LIBXML_NOENT`, `LIBXML_DTDLOAD`, or `LIBXML_DTDVALID` for untrusted XML without explicitly blocking external resources; these options can require [additional protection against external entity loading](https://www.php.net/manual/en/function.libxml-disable-entity-loader.php).
 
-**For PHP versions prior to 8.0, per [the PHP documentation](https://www.php.net/manual/en/function.libxml-set-external-entity-loader.php), the following should be set when using the default PHP XML parser in order to prevent XXE:**
+To reject external entity resolution, install a [resolver callback that returns `null`](https://www.php.net/manual/en/function.libxml-set-external-entity-loader.php) before processing untrusted XML and keep it installed for that operation:
 
 ``` php
-libxml_set_external_entity_loader(null);
+libxml_set_external_entity_loader(function () {
+    return null;
+});
 ```
+
+Passing `null` directly to `libxml_set_external_entity_loader()` is not equivalent to returning `null` from the callback and does not block external entity loading, as the [PHP security advisory's mitigation](https://github.com/php/php-src/security/advisories/GHSA-3qrf-m4j2-pcrr) demonstrates.
 
 A description of how to abuse this in PHP is presented in a good [SensePost article](https://sensepost.com/blog/2014/revisting-xxe-and-abusing-protocols/) describing a cool PHP based XXE vulnerability that was fixed in Facebook.
 
 ## Python
 
-The Python 3 official documentation contains a section on [xml vulnerabilities](https://docs.python.org/3/library/xml.html#xml-vulnerabilities). As of the 1st January 2020 Python 2 is no longer supported, however the Python website still contains [some legacy documentation](https://docs.python.org/2/library/xml.html#xml-vulnerabilities).
+Follow Python's current [XML security guidance](https://docs.python.org/3/library/xml.html#xml-security). The built-in parsers rely on Expat, which may be bundled with Python or supplied by the operating system. Check `pyexpat.EXPAT_VERSION` in the deployed interpreter and keep both Python and Expat updated. Expat versions below 2.7.2 may be affected by entity-expansion, large-token, or dynamic-memory denial-of-service vulnerabilities; a Python version alone does not establish the linked Expat version.
 
-The table below shows you which various XML parsing modules in Python 3 are vulnerable to certain XXE attacks.
+Expat itself does not access files or the network by default. Higher-level APIs and custom handlers still need an external-resource policy. Independently bound input size and decompressed data: the standard-library `xmlrpc` module is vulnerable to decompression bombs.
 
-| Attack Type               | sax        | etree      | minidom    | pulldom    | xmlrpc     |
-|---------------------------|------------|------------|------------|------------|------------|
-| Billion Laughs            | Vulnerable | Vulnerable | Vulnerable | Vulnerable | Vulnerable |
-| Quadratic Blowup          | Vulnerable | Vulnerable | Vulnerable | Vulnerable | Vulnerable |
-| External Entity Expansion | Safe       | Safe       | Safe       | Safe       | Safe       |
-| DTD Retrieval             | Safe       | Safe       | Safe       | Safe       | Safe       |
-| Decompression Bomb        | Safe       | Safe       | Safe       | Safe       | Vulnerable |
-
-To protect your application from the applicable attacks, the [defusedxml](https://github.com/tiran/defusedxml) package exists to help you sanitize your input and protect your application against DDoS and remote attacks.
+For untrusted XML, use the [defusedxml parsing interfaces](https://github.com/tiran/defusedxml#defusedxml) in place of the corresponding standard-library parsing functions. Keep entity and external-resource rejection enabled, and set `forbid_dtd=True` on APIs that offer it when DTDs are unnecessary. These interfaces reject prohibited constructs; they do not sanitize XML or replace application resource limits.
 
 ## Semgrep Rules
 
@@ -493,8 +489,6 @@ The official registry rule is [xmlinputfactory-possible-xxe](https://semgrep.dev
 
 ## References
 
-- [OWASP Top 10-2017 A4: XML External Entities (XXE)](https://owasp.org/www-project-top-ten/2017/A4_2017-XML_External_Entities_%28XXE%29.html)
-- [Timothy Morgan's 2014 paper: "XML Schema, DTD, and Entity Attacks"](https://dl.packetstormsecurity.net/papers/general/XMLDTDEntityAttacks.pdf)
-- [FindSecBugs XXE Detection](https://find-sec-bugs.github.io/bugs.htm#XXE_SAXPARSER)
-- [XXEbugFind Tool](https://github.com/ssexxe/XXEBugFind)
-- [Testing for XML Injection](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/07-Input_Validation_Testing/07-Testing_for_XML_Injection.html)
+- [Oracle Java 25: JAXP Security Guide](https://docs.oracle.com/en/java/javase/25/security/java-api-xml-processing-jaxp-security-guide.html)
+- [Python: XML Security](https://docs.python.org/3/library/xml.html)
+- [Morgan and Al Ibrahim: XML Schema, DTD, and Entity Attacks](https://dl.packetstormsecurity.net/papers/general/XMLDTDEntityAttacks.pdf)
