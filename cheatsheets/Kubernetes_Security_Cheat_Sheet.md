@@ -406,7 +406,7 @@ Pod Security Standards combined with the Pod Security Admission Controller allow
 
 - **Privileged**: Unrestricted, allows for known privilege escalations. Intended for use with system and infrastructure level workloads that require privilege to operate properly. All securityContext settings are permitted
 - **Baseline**: Minimally restrictive policy designed for common containerized workloads while preventing known privilege escalations. Targeted at developers and operators of non-critical applications. The most dangerous securityContext settings, such as securityContext.privileged, hostPID, hostPath, hostIPC, are not permitted.
-- **Restricted**: The most restrictive policy, designed to enforce current Pod hardening practices at the expense of some compatibility. Intended for security critical workloads or untrusted users. Restricted includes all of the enforcements from the baseline policy, in addition to much more restrictive requirements, such as requiring the dropping of all capabilities, enforcing runAsNotRoot, and more.
+- **Restricted**: The most restrictive policy, designed to enforce current Pod hardening practices at the expense of some compatibility. Intended for security critical workloads or untrusted users. Restricted includes all of the enforcements from the baseline policy, in addition to much more restrictive requirements, such as requiring the dropping of all capabilities, enforcing runAsNonRoot, and more.
 
 Each of the profiles have defined settings baselines that can be found in more detail [here](https://kubernetes.io/docs/concepts/security/pod-security-standards/#profile-details).
 
@@ -425,16 +425,11 @@ metadata:
     pod-security.kubernetes.io/warn: restricted
 ```
 
-Cluster administrators should properly organize and and enforce policy on cluster namespaces, only permitting the privileged policy on namespaces where it is absolutely required, such as for critical cluster services that require access to the underlying host. Namespaces should be set to the lowest Pod Security Policy that can be enforced and supports their risk level.
+Cluster administrators should properly organize and enforce policy across namespaces, applying the least-permissive Pod Security Standard that supports each workload's requirements. The `restricted` profile is preferred where workloads can meet its requirements; `baseline` is appropriate where compatibility constraints prevent `restricted` enforcement.
 
-If more granular policy enforcement is required beyond the three profiles (Privileged, Baseline, Restricted), Third party admission controllers like OPA Gatekeeper or Kyverno, or built-in Validating Admission Policy can be utilized.
+If more granular policy enforcement is required beyond the three Pod Security Standard profiles, third-party admission controllers such as OPA Gatekeeper or Kyverno, or built-in Validating Admission Policy, can be utilized.
 
-#### Use Pod security policies to control the security-related attributes of pods, which includes container privilege levels
-
-> **Warning**  
-> Kubernetes deprecated Pod Security Policies in favor of Pod Security Standards and the Pod Security Admission Controller, and was removed from Kubernetes in v1.25. Consider using Pod Security Standards and the Pod Security Admission Controller instead.
-
-All security policies should include the following conditions:
+The following controls align with the restrictions enforced by the Pod Security Standards and should be considered when hardening workloads:
 
 - Application processes do not run as root.
 - Privilege escalation is not allowed.
@@ -446,7 +441,7 @@ All security policies should include the following conditions:
 - Give each application its own Kubernetes Service Account.
 - If a container does not need to access the Kubernetes API, do not let it mount the service account credentials.
 
-For more information on Pod security policies, refer to the documentation at <https://kubernetes.io/docs/concepts/policy/pod-security-policy/>.
+For configuration details, see the Kubernetes documentation for [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) and [Pod Security Admission](https://kubernetes.io/docs/concepts/security/pod-security-admission/).
 
 --
 
