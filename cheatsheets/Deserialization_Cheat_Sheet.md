@@ -50,6 +50,11 @@ Implementation advice:
 
 - Configure [serialization filters](https://docs.oracle.com/en/java/javase/17/core/serialization-filtering1.html) with an application-specific class allowlist and resource limits before reading objects.
 - If maintaining a `resolveClass()` override, account for its [limitations below](#harden-your-own-javaioobjectinputstream); class checks alone do not bound resource consumption.
+- Prefer Java's built-in [serialization filtering](https://docs.oracle.com/en/java/javase/24/core/java-serialization-filters.html) for `ObjectInputStream` when native Java serialization cannot be avoided. `ObjectInputFilter` can restrict deserialized classes and enforce resource limits such as array length, graph depth, reference count, and stream size.
+- Define filters for the specific classes and resource limits expected by each deserialization context. An allow-list is preferable when the expected types are known.
+- For simple applications, a JVM-wide filter can be configured with the `jdk.serialFilter` system property. For individual streams, use `ObjectInputStream#setObjectInputFilter()` or `ObjectInputFilter.Config.createFilter()`.
+- Do not treat serialization filtering as a reason to deserialize arbitrary untrusted data; avoid native Java serialization where a safer data format can be used.
+- In legacy code where `ObjectInputStream#resolveClass()` is overridden, continue to restrict the classes that may be deserialized, but prefer the standard filtering mechanism for new implementations.
 
 #### Clear-box Review
 

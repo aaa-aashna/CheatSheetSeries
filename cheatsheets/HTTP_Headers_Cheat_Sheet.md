@@ -23,15 +23,15 @@ Use Content Security Policy (CSP) frame-ancestors directive if possible.
 Do not allow displaying of the page in a frame.
 > `X-Frame-Options: DENY`
 
-### X-XSS-Protection
+### X-XSS-Protection (Deprecated)
 
-The HTTP `X-XSS-Protection` response header is a feature of Internet Explorer, Chrome, and Safari that stops pages from loading when they detect reflected cross-site scripting (XSS) attacks.
+The HTTP `X-XSS-Protection` response header is a deprecated, non-standard feature. Its filtering behavior is largely unnecessary in modern browsers and can create XSS vulnerabilities in otherwise safe websites. Use a strong Content Security Policy (CSP) instead.
 
 WARNING: Even though this header can protect users of older web browsers that don't yet support CSP, in some cases, this header can create XSS vulnerabilities in otherwise safe websites [source](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection).
 
 #### Recommendation
 
-Use a Content Security Policy (CSP) that disables the use of inline JavaScript.
+Use a Content Security Policy (CSP) that disables the use of inline JavaScript (`'unsafe-inline'`).
 
 Do not set this header or explicitly turn it off.
 > `X-XSS-Protection: 0`
@@ -197,6 +197,22 @@ Set it and disable all the features that your site does not need or allow them o
 > `Permissions-Policy: geolocation=(), camera=(), microphone=()`
 
 - *NOTE*: This example is disabling geolocation, camera, and microphone for all domains.
+
+### Clear-Site-Data
+
+The `Clear-Site-Data` response header instructs a browser to clear selected data associated with the requesting origin, such as cookies, storage, or cached data.
+
+#### Recommendation
+
+Use `Clear-Site-Data` when an application needs to remove browser-held data after a security-sensitive state change, such as a successful logout. Select only the data types that need to be cleared because the header can affect more than just the current page.
+
+For example, a logout response can clear authentication-related browser data:
+
+> `Clear-Site-Data: "cache", "cookies", "storage", "executionContexts"`
+
+The `"cookies"` directive also affects cookies associated with the registrable domain, including subdomains. Do not treat `Clear-Site-Data` as a replacement for server-side session invalidation; the server must still invalidate the authenticated session or token.
+
+For current directive support and browser behavior, see [MDN: Clear-Site-Data](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Clear-Site-Data).
 
 ### Server
 
